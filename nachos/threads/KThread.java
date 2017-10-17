@@ -195,15 +195,21 @@ public class KThread {
 		Lib.debug(dbgThread, "Finishing thread: " + currentThread.toString());
 
 		Machine.interrupt().disable();
-
+		
 		Machine.autoGrader().finishingCurrentThread();
 
 		Lib.assertTrue(toBeDestroyed == null);
 		toBeDestroyed = currentThread;
-
+		
+		if(currentThread.called_join == true){
+			KThread t = currentThread.joined_to;
+			t.ready();
+		}
+		
 		currentThread.status = statusFinished;
 
 		sleep();
+		Machine.interrupt().enable();
 	}
 
 	/**
@@ -284,7 +290,28 @@ public class KThread {
 		Lib.debug(dbgThread, "Joining to thread: " + toString());
 
 		Lib.assertTrue(this != currentThread);
-
+		
+		if(this.status == statusFinished){
+			Lib.debug(dbgThread, "Joining to a finished thread" + toString());
+			return;
+		}
+		
+		Lib.assertTrue(!this.called_join);
+		//assert that the thread joined was not called join before. 
+		
+		Machine.interrupt().disable();
+		
+		//Just used a variable instead of a queue
+		//Because a thread can only be joined to a single thread
+		//So no need of a queue
+		this.joined_to = currentThread;
+		this.called_join = true;
+		
+		KThread.sleep();
+		
+		Machine.interrupt().enable();
+		
+		return;
 	}
 
 	/**
@@ -406,6 +433,29 @@ public class KThread {
 
 		private int which;
 	}
+		
+	private static void joinTest1 () {
+		KThread child1 = new KThread( new Runnable () {
+			public void run() {
+			    System.out.println("I (heart) Nachos!");
+			}
+		    });
+		child1.setName("child1").fork();
+	
+		// We want the child to finish before we call join.  Although
+		// our solutions to the problems cannot busy wait, our test
+		// programs can!
+	
+		for (int i = 0; i < 5; i++) {
+		    System.out.println ("busy...");
+		    KThread.currentThread().yield();
+		}
+	
+		child1.join();
+		System.out.println("After joining, child1 should be finished.");
+		System.out.println("is it? " + (child1.status == statusFinished));
+		Lib.assertTrue((child1.status == statusFinished), " Expected child1 to be finished.");
+	}
 
 	/**
 	 * Tests whether this module is working.
@@ -415,6 +465,7 @@ public class KThread {
 
 		new KThread(new PingTest(1)).setName("forked thread").fork();
 		new PingTest(0).run();
+		joinTest1();
 	}
 
 	private static final char dbgThread = 't';
@@ -450,10 +501,16 @@ public class KThread {
 	private TCB tcb;
 
 	/**
-	 * Unique identifer for this thread. Used to deterministically compare
+	 * Unique identifier for this thread. Used to deterministically compare
 	 * threads.
 	 */
 	private int id = numCreated++;
+	
+	//The thread it is joined to. If no, null. 
+	private KThread joined_to = null;
+	
+	private boolean called_join = false;
+	//If it has been called join, if true, cannot call any join on it. 
 
 	/** Number of times the KThread constructor was called. */
 	private static int numCreated = 0;
