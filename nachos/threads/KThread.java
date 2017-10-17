@@ -205,7 +205,8 @@ public class KThread {
 			KThread t = currentThread.joined_to;
 			t.ready();
 		}
-		
+		//If it has been called join, the thread joined to it should be ready.  		
+
 		currentThread.status = statusFinished;
 
 		sleep();
