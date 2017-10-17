@@ -210,6 +210,7 @@ public class KThread {
 		currentThread.status = statusFinished;
 
 		sleep();
+		//The thread will never be waken up by scheduler. 
 		Machine.interrupt().enable();
 	}
 
