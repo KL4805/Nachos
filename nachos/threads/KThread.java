@@ -294,12 +294,15 @@ public class KThread {
 		Lib.assertTrue(this != currentThread);
 		
 		if(this.status == statusFinished){
-			Lib.debug(dbgThread, "Joining to a finished thread" + toString());
+			System.out.println("Joining to a finished thread.");
 			return;
 		}
 		
-		Lib.assertTrue(!this.called_join);
+		//Lib.assertTrue(!this.called_join);
 		//assert that the thread joined was not called join before. 
+		if(this.called_join == true){
+			System.out.println("A thread been called join twice.");
+		}
 		
 		Machine.interrupt().disable();
 		
@@ -441,7 +444,7 @@ public class KThread {
 			public void run() {
 			    System.out.println("I (heart) Nachos!");
 			}
-		    });
+		});
 		child1.setName("child1").fork();
 	
 		// We want the child to finish before we call join.  Although
