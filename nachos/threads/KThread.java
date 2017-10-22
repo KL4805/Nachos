@@ -300,9 +300,7 @@ public class KThread {
 		
 		//Lib.assertTrue(!this.called_join);
 		//assert that the thread joined was not called join before. 
-		if(this.called_join == true){
-			System.out.println("A thread been called join twice.");
-		}
+		Lib.assertTrue(this.called_join == false, "Error: the thread has been joined to another thread");
 		
 		Machine.interrupt().disable();
 		
