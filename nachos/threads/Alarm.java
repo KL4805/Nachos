@@ -31,7 +31,6 @@ public class Alarm {
 	 * should be run.
 	 */
 	public void timerInterrupt() {
-		KThread.currentThread().yield();
 		long time_now=Machine.timer().getTime();
 		for (int i=0;i<wakeup_queue.size();i++)
 		{
@@ -44,6 +43,7 @@ public class Alarm {
 				i--;
 			}
 		}
+		KThread.currentThread().yield();
 	}
 
 	/**
