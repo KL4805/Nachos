@@ -292,7 +292,7 @@ public class KThread {
 		Lib.debug(dbgThread, "Joining to thread: " + toString());
 
 		Lib.assertTrue(this != currentThread);
-		
+		Lib.assertTrue(this.called_join == false, "Error: the thread has been joined to another thread");
 		if(this.status == statusFinished){
 			System.out.println("Joining to a finished thread.");
 			return;
@@ -300,7 +300,6 @@ public class KThread {
 		
 		//Lib.assertTrue(!this.called_join);
 		//assert that the thread joined was not called join before. 
-		Lib.assertTrue(this.called_join == false, "Error: the thread has been joined to another thread");
 		
 		Machine.interrupt().disable();
 		
@@ -463,13 +462,33 @@ public class KThread {
 	/**
 	 * Tests whether this module is working.
 	 */
-	public static void selfTest() {
-		Lib.debug(dbgThread, "Enter KThread.selfTest");
+    private static class A implements Runnable {
+        A () {}
+        public void run () {
+            KThread t2 = new KThread (new B()).setName ("B");
+            System.out.println ("foo");
+            t2.fork ();
+            System.out.println ("far");
+            t2.join ();
+            System.out.println ("fum");
+        }
+    }
+        
+    private static class B implements Runnable {
+        B () {}
+        public void run () {
+            System.out.println ("fie");
+        }
+    }
 
-		new KThread(new PingTest(1)).setName("forked thread").fork();
-		new PingTest(0).run();
-		joinTest1();
-	}
+    public static void selfTest() {
+        KThread t1 = new KThread (new A()).setName ("A");
+        System.out.println ("fee");
+        t1.fork ();
+        System.out.println ("foe");
+        t1.join ();
+        System.out.println ("fun");
+    }
 
 	private static final char dbgThread = 't';
 
