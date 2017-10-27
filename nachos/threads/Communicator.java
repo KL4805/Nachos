@@ -12,21 +12,25 @@ import nachos.machine.*;
  * be paired off at this point.
  */
 public class Communicator {
-	private Lock lck;
+    private Lock lck;
 	private Condition C_speaker;
 	private Condition C_listener;
 	private int sp_cnt;
 	private int ls_cnt;
-	private Queue<Integer> queue;
+	private int word_in;
+	private int speaking;
+	//private Semaphore speaking_speaker;
 	/**
 	 * Allocate a new communicator.
 	 */
 	public Communicator() {
 		lck=new Lock();
+		speaking = 0;
 		C_speaker = new Condition(lck);
 		C_listener = new Condition(lck);
-		queue = new LinkedList<Integer>();
-		sp_cnt = 0;
+		//speaking_speaker = new Semaphore(1);
+		word_in = 0;
+		//sp_cnt = 0;
 		ls_cnt = 0;		
 	}
 
@@ -42,15 +46,17 @@ public class Communicator {
 	 */
 	public void speak(int word) {
 		lck.acquire();
-		sp_cnt+=1;
-		
-		while(ls_cnt ==0){
+		//sp_cnt+=1;
+		System.out.println("Speaker "+ KThread.currentThread().toString()+ " entered");
+		while(ls_cnt == 0 || speaking == 1){
 			C_speaker.sleep();
 		}
-		queue.add(word);
+		word_in = word;
+		speaking = 1;
 		C_listener.wake();
-		C_speaker.sleep();
-		sp_cnt-=1;
+		//speaking_speaker.P();
+		//sp_cnt-=1;
+		System.out.println("Speaker "+KThread.currentThread().toString()+" leaves");
 		lck.release();
 	}
 
@@ -62,18 +68,23 @@ public class Communicator {
 	 */
 	public int listen() {
 		lck.acquire();
+		System.out.println("Listener "+KThread.currentThread().toString()+" entered");
 		ls_cnt +=1;
-		while(sp_cnt == 0){
+		while(speaking == 0){
+			C_speaker.wake();
 			C_listener.sleep();
 		}
-		C_speaker.wake();
-		C_listener.sleep();
-		int wd = queue.remove();
-		ls_cnt -=1;
+		int wd = word_in;
+		speaking = 0;
+		ls_cnt -= 1;
+		//speaking_speaker.V();
 		C_speaker.wake();
 		lck.release();
+		System.out.println("Listener "+KThread.currentThread().toString()+" leaves");
+
 		return wd;
 	}
+
     public static void commTest6() {
 	final Communicator com = new Communicator();
 	final long times[] = new long[4];
@@ -110,6 +121,7 @@ public class Communicator {
 	speaker1.fork(); speaker2.fork(); listener1.fork(); listener2.fork();
 	speaker1.join(); speaker2.join(); listener1.join(); listener2.join();
     
+
 	Lib.assertTrue(words[0] == 4, "Didn't listen back spoken word."); 
 	Lib.assertTrue(words[1] == 7, "Didn't listen back spoken word.");
 	Lib.assertTrue(times[0] > times[2], "speak() returned before listen() called.");
